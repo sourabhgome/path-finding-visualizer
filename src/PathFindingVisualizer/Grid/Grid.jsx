@@ -16,8 +16,8 @@ export default class Grid extends Component {
     this.rows = 20;
     this.cols = 50;
     this.speed = 15;
-    this.startNode = { row: 10, col: 25 };
-    this.finishNode = { row: 10, col: 28 };
+    this.startNode = { row: 10, col: 15 };
+    this.finishNode = { row: 10, col: 35 };
     this.algorithms = [];
     this.selectedAlgoritm = "Dijkstra";
     this.props.registerGrid(this);
