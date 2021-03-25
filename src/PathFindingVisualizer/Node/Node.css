@@ -1,0 +1,115 @@
+.node {
+  /*width: inherit;
+  height: 2%;*/
+  width: 20px;
+  height: 25px;
+  border: thin solid lightskyblue;
+  border-left: none;
+  border-top: none;
+  display: inline-block;
+  /*margin-bottom: -0.5px;
+  margin-left: -0.5px;*/
+  flex: 1;
+}
+
+.node-finish {
+  background-image: url("../assets/finish-node.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.node-start {
+  background-image: url("../assets/start-node.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.node-visited {
+  animation-name: visitedAnimation;
+  animation-duration: 1.5s;
+  animation-timing-function: ease-out;
+  animation-delay: 0;
+  animation-direction: alternate;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-play-state: running;
+}
+
+@keyframes visitedAnimation {
+  0% {
+    transform: scale(0.3);
+    background-color: rgba(0, 0, 66, 0.75);
+    border-radius: 100%;
+  }
+
+  50% {
+    background-color: rgba(17, 104, 217, 0.75);
+  }
+
+  75% {
+    transform: scale(1.2);
+    background-color: rgba(0, 217, 159, 0.75);
+  }
+
+  100% {
+    transform: scale(1);
+    background-color: rgba(0, 190, 218, 0.75);
+  }
+}
+
+.node-wall {
+  animation-name: wallAnimation;
+  animation-duration: 0.3s;
+  animation-timing-function: ease-out;
+  animation-delay: 0;
+  animation-direction: alternate;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-play-state: running;
+  /*background-color: rgb(37, 18, 18);*/
+}
+
+@keyframes wallAnimation {
+  0% {
+    transform: scale(0.3);
+    background-color: rgb(37, 18, 18);
+  }
+
+  50% {
+    transform: scale(1.2);
+    background-color: rgb(15, 36, 13);
+  }
+
+  100% {
+    transform: scale(1);
+    background-color: rgb(9, 12, 34);
+  }
+}
+
+.node-shortest-path {
+  animation-name: shortestPath;
+  animation-duration: 1.5s;
+  animation-timing-function: ease-out;
+  animation-delay: 0;
+  animation-direction: alternate;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-play-state: running;
+}
+
+@keyframes shortestPath {
+  0% {
+    transform: scale(0.6);
+    background-color: rgb(255, 254, 106);
+  }
+
+  50% {
+    transform: scale(1.2);
+    background-color: rgb(255, 254, 106);
+  }
+
+  100% {
+    transform: scale(1);
+    background-color: rgb(255, 254, 106);
+  }
+}
