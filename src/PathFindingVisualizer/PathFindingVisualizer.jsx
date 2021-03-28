@@ -14,14 +14,24 @@ export default class PathFindingVisualizer extends Component {
     this.registerGrid = this.registerGrid.bind(this);
     this.onVisualize = this.onVisualize.bind(this);
     this.onPause = this.onPause.bind(this);
+    this.onResume = this.onResume.bind(this);
     this.onReset = this.onReset.bind(this);
     this.setAlgorithm = this.setAlgorithm.bind(this);
     this.setMaze = this.setMaze.bind(this);
     this.setSpeed = this.setSpeed.bind(this);
+    this.visualizationStopped = this.visualizationStopped.bind(this);
   }
 
   registerGrid(grid) {
     this.grid = grid;
+  }
+
+  registerToolbar = (toolbar) => {
+    this.toolbar = toolbar;
+  };
+
+  visualizationStopped() {
+    this.toolbar.setIsVisualizing(false);
   }
 
   onVisualize() {
@@ -34,6 +44,10 @@ export default class PathFindingVisualizer extends Component {
 
   onPause() {
     this.grid.onPause();
+  }
+
+  onResume() {
+    this.grid.onResume();
   }
 
   setSpeed(speed) {
@@ -58,11 +72,13 @@ export default class PathFindingVisualizer extends Component {
           onVisualize={this.onVisualize}
           onReset={this.onReset}
           onPause={this.onPause}
+          onResume={this.onResume}
           setAlgorithm={this.setAlgorithm}
           setMaze={this.setMaze}
           setSpeed={this.setSpeed}
+          registerToolbar={this.registerToolbar}
         ></Toolbar>
-        <Grid registerGrid={this.registerGrid}></Grid>
+        <Grid registerGrid={this.registerGrid} visualizationStopped={this.visualizationStopped}></Grid>
         <Footer></Footer>
       </MDBContainer>
     );

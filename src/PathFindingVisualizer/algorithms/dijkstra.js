@@ -34,15 +34,14 @@ function updateUnvisitedNeighbours(node, grid) {
 function getUnvisitedNeighbours(node, grid) {
   const neighbours = [];
   const { col, row } = node;
-  if (row > 0) neighbours.push(grid[row - 1][col]);
+  /*if (row > 0) neighbours.push(grid[row - 1][col]);
   if (row < grid.length - 1) neighbours.push(grid[row + 1][col]);
   if (col > 0) neighbours.push(grid[row][col - 1]);
+  if (col < grid[0].length - 1) neighbours.push(grid[row][col + 1]);*/
   if (col < grid[0].length - 1) neighbours.push(grid[row][col + 1]);
-  console.log("Before filter : ", neighbours);
-  console.log(
-    "After filter : ",
-    neighbours.filter((neighbour) => !neighbour.isVisited)
-  );
+  if (row < grid.length - 1) neighbours.push(grid[row + 1][col]);
+  if (col > 0) neighbours.push(grid[row][col - 1]);
+  if (row > 0) neighbours.push(grid[row - 1][col]);
   return neighbours.filter((neighbour) => !neighbour.isVisited);
 }
 

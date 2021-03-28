@@ -4,6 +4,8 @@ import { MDBContainer, MDBRow, MDBCol } from "mdbreact";
 import "../PathFindingVisualizer.css";
 import Node from "../Node/Node";
 import { dijkstra, getNodesInShortestPathOrder } from "../algorithms/dijkstra";
+import dfs from "../algorithms/dfs";
+import bfs from "../algorithms/bfs";
 
 export default class Grid extends Component {
   constructor(props) {
@@ -19,10 +21,20 @@ export default class Grid extends Component {
     this.startNode = { row: 10, col: 15 };
     this.finishNode = { row: 10, col: 35 };
     this.algorithms = [];
-    this.selectedAlgoritm = "Dijkstra";
+    this.selectedAlgorithm = "Dijkstra";
     this.props.registerGrid(this);
     this.registerNode = this.registerNode.bind(this);
     this.isMousePressed = false;
+    this.draggingStart = false;
+    this.draggingFinish = false;
+    this.timeoutVisitedNodesInOrder = [];
+    this.timeoutNodesInShortestPathOrder = [];
+    this.timeoutVisualization = null;
+    this.visitedNodesInOrderCurrentIndex = 0;
+    this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.visitedNodesInOrder = [];
+    this.nodesInShortestPathOrder = [];
+    this.isVisualizing = false;
   }
 
   //Init
@@ -47,6 +59,7 @@ export default class Grid extends Component {
       isFinish: row === this.finishNode.row && col === this.finishNode.col,
       distance: Infinity,
       isVisited: false,
+      isConsidered: false,
       isWall: false,
       previousNode: null,
     };
@@ -72,19 +85,43 @@ export default class Grid extends Component {
   }
 
   setIsVisited(node) {
-    return () => this.nodes[node.row][node.col].setIsVisited(true);
+    return () => {
+      this.visitedNodesInOrderCurrentIndex++;
+      this.nodes[node.row][node.col].setIsVisited(true);
+    };
   }
 
   setIsIncludedInPath(node) {
-    return () => this.nodes[node.row][node.col].setIsIncludedInPath(true);
+    return () => {
+      this.nodesInShortestPathOrderCurrentIndex++;
+      this.nodes[node.row][node.col].setIsIncludedInPath(true);
+    };
   }
 
   setSpeed(speed) {
-    this.speed = speed == 1 ? 100 : speed == 2 ? 20 : speed == 3 ? 15 : 10;
+    this.speed = speed == 1 ? 40 : speed == 2 ? 20 : speed == 3 ? 15 : 10;
+    if (this.timeoutVisitedNodesInOrder.length) {
+      for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+    } else if (this.timeoutNodesInShortestPathOrder.length) {
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.isVisualizing = false;
+    }
+    this.timeoutVisitedNodesInOrder = [];
+    this.timeoutNodesInShortestPathOrder = [];
+    this.animate(
+      this.visitedNodesInOrder,
+      this.visitedNodesInOrderCurrentIndex,
+      this.nodesInShortestPathOrder,
+      this.nodesInShortestPathOrderCurrentIndex
+    );
   }
 
   setAlgorithm(algorithm) {
-    console.log(algorithm);
+    this.selectedAlgorithm = algorithm;
+    this.setState({ selectedAlgorithm: algorithm });
   }
 
   setMaze(maze) {
@@ -101,6 +138,20 @@ export default class Grid extends Component {
 
   //listeners
   onReset = () => {
+    if (this.timeoutVisitedNodesInOrder.length) {
+      for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.props.visualizationStopped();
+    } else if (this.timeoutNodesInShortestPathOrder.length) {
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.props.visualizationStopped();
+    }
+    this.visitedNodesInOrderCurrentIndex = 0;
+    this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.timeoutVisitedNodesInOrder = [];
+    this.timeoutNodesInShortestPathOrder = [];
     let r = 0,
       c = 0;
     for (const row of this.nodes) {
@@ -118,40 +169,101 @@ export default class Grid extends Component {
   };
 
   onPause() {
-    console.log("Pause clicked");
+    if (this.timeoutVisitedNodesInOrder.length) {
+      for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.props.visualizationStopped();
+      this.isVisualizing = false;
+    } else if (this.timeoutNodesInShortestPathOrder.length) {
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.props.visualizationStopped();
+      this.isVisualizing = false;
+    }
+    this.timeoutVisitedNodesInOrder = [];
+    this.timeoutNodesInShortestPathOrder = [];
+  }
+
+  onResume() {
+    this.animate(
+      this.visitedNodesInOrder,
+      this.visitedNodesInOrderCurrentIndex,
+      this.nodesInShortestPathOrder,
+      this.nodesInShortestPathOrderCurrentIndex
+    );
   }
 
   //Mouse listeners
   handleMouseDown(row, col) {
     this.isMousePressed = true;
-    if (this.grid[row][col].isWall) {
-      this.grid[row][col].isWall = false;
-      this.nodes[row][col].setIsWall(false);
+    if (row == this.startNode.row && col == this.startNode.col) {
+      this.draggingStart = true;
+    } else if (row == this.finishNode.row && col == this.finishNode.col) {
+      this.draggingFinish = true;
     } else {
-      this.grid[row][col].isWall = true;
-      this.nodes[row][col].setIsWall(true);
+      if (this.grid[row][col].isWall) {
+        this.grid[row][col].isWall = false;
+        this.nodes[row][col].setIsWall(false);
+      } else {
+        this.grid[row][col].isWall = true;
+        this.nodes[row][col].setIsWall(true);
+      }
     }
     //this.setState({ grid: this.grid });
   }
 
   handleMouseEnter(row, col) {
     if (this.isMousePressed) {
-      this.grid[row][col].isWall = true;
-      this.nodes[row][col].setIsWall(true);
+      if (this.draggingStart && (row != this.finishNode.row || col != this.finishNode.col)) {
+        this.nodes[this.startNode.row][this.startNode.col].setStart(false);
+        this.grid[this.startNode.row][this.startNode.col].isStart = false;
+        this.startNode.row = row;
+        this.startNode.col = col;
+        this.nodes[this.startNode.row][this.startNode.col].setStart(true);
+        this.grid[this.startNode.row][this.startNode.col].isStart = true;
+      } else if (this.draggingFinish && (this.startNode.row != row || this.startNode.col != col)) {
+        this.nodes[this.finishNode.row][this.finishNode.col].setFinish(false);
+        this.grid[this.finishNode.row][this.finishNode.col].isFinish = false;
+        this.finishNode.row = row;
+        this.finishNode.col = col;
+        this.nodes[this.finishNode.row][this.finishNode.col].setFinish(true);
+        this.grid[this.finishNode.row][this.finishNode.col].oisFinish = true;
+      } else {
+        if (
+          (row != this.startNode.row && col != this.startNode.col) ||
+          (row != this.finishNode.row && col != this.finishNode.col)
+        ) {
+          this.grid[row][col].isWall = true;
+          this.nodes[row][col].setIsWall(true);
+        }
+      }
     }
   }
 
   handleMouseUp() {
     this.isMousePressed = false;
+    this.draggingFinish = false;
+    this.draggingStart = false;
   }
 
   onVisualize() {
-    if (this.selectedAlgoritm === "Dijkstra") {
-      this.visualizeDijkstra();
+    if (this.timeoutVisitedNodesInOrder.length) {
+      for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.visitedNodesInOrderCurrentIndex = 0;
+      this.nodesInShortestPathOrderCurrentIndex = 0;
+      if (this.isVisualizing) this.props.visualizationStopped();
+      this.isVisualizing = true;
+    } else if (this.timeoutNodesInShortestPathOrder.length) {
+      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.visitedNodesInOrderCurrentIndex = 0;
+      this.nodesInShortestPathOrderCurrentIndex = 0;
+      if (this.isVisualizing) this.props.visualizationStopped();
+      this.isVisualizing = true;
     }
-  }
-
-  visualizeDijkstra() {
     const grid = this.grid;
     const startNode = grid[this.startNode.row][this.startNode.col];
     const finishNode = grid[this.finishNode.row][this.finishNode.col];
@@ -159,6 +271,8 @@ export default class Grid extends Component {
       for (const node of row) {
         node.distance = Infinity;
         node.isVisited = false;
+        node.isConsidered = false;
+        node.previousNode = null;
       }
     }
     for (const row of this.nodes) {
@@ -166,19 +280,80 @@ export default class Grid extends Component {
         if (!node.getIsWall()) node.setIsVisited(false);
       }
     }
-    const visitedNodesInOrder = dijkstra(this.grid, startNode, finishNode);
-    const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-    this.animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder);
+    if (this.selectedAlgorithm === "Dijkstra") {
+      this.visualizeDijkstra();
+    } else if (this.selectedAlgorithm === "DFS") {
+      this.visualizeDFS();
+    } else if (this.selectedAlgorithm === "BFS") {
+      this.visualizeBFS();
+    }
   }
 
-  animateDijkstra(visitedNodesInOrder, nodesInShortestPathOrder) {
+  visualizeDijkstra() {
+    const grid = this.grid;
+    const startNode = grid[this.startNode.row][this.startNode.col];
+    const finishNode = grid[this.finishNode.row][this.finishNode.col];
+    const visitedNodesInOrder = dijkstra(this.grid, startNode, finishNode);
+    const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+    this.visitedNodesInOrder = visitedNodesInOrder;
+    this.nodesInShortestPathOrder = nodesInShortestPathOrder;
+    this.visitedNodesInOrderCurrentIndex = 0;
+    this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.animate(visitedNodesInOrder, 0, nodesInShortestPathOrder, 0);
+  }
+
+  visualizeDFS() {
+    const grid = this.grid;
+    const startNode = grid[this.startNode.row][this.startNode.col];
+    const finishNode = grid[this.finishNode.row][this.finishNode.col];
+    const visitedNodesInOrder = dfs(this.grid, startNode, finishNode);
+    const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+    this.visitedNodesInOrder = visitedNodesInOrder;
+    this.nodesInShortestPathOrder = nodesInShortestPathOrder;
+    this.visitedNodesInOrderCurrentIndex = 0;
+    this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.animate(visitedNodesInOrder, 0, nodesInShortestPathOrder, 0);
+  }
+
+  visualizeBFS() {
+    const grid = this.grid;
+    const startNode = grid[this.startNode.row][this.startNode.col];
+    const finishNode = grid[this.finishNode.row][this.finishNode.col];
+    const visitedNodesInOrder = bfs(this.grid, startNode, finishNode);
+    const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+    this.visitedNodesInOrder = visitedNodesInOrder;
+    this.nodesInShortestPathOrder = nodesInShortestPathOrder;
+    this.visitedNodesInOrderCurrentIndex = 0;
+    this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.animate(visitedNodesInOrder, 0, nodesInShortestPathOrder, 0);
+  }
+
+  animate(
+    visitedNodesInOrder,
+    visitedNodesInOrderIndex,
+    nodesInShortestPathOrder,
+    nodesInShortestPathOrderIndex
+  ) {
+    console.log("Animate chala");
     let k = 1;
-    for (const node of visitedNodesInOrder) {
-      setTimeout(this.setIsVisited(node), this.speed * k++);
+    this.timeoutVisitedNodesInOrder = [];
+    this.timeoutNodesInShortestPathOrder = [];
+    this.timeoutVisualization = null;
+    console.log(
+      visitedNodesInOrder,
+      visitedNodesInOrderIndex,
+      nodesInShortestPathOrder,
+      nodesInShortestPathOrderIndex
+    );
+    for (let i = visitedNodesInOrderIndex; i < visitedNodesInOrder.length; i++) {
+      const node = visitedNodesInOrder[i];
+      this.timeoutVisitedNodesInOrder.push(setTimeout(this.setIsVisited(node), this.speed * k++));
     }
-    for (const node of nodesInShortestPathOrder) {
-      setTimeout(this.setIsIncludedInPath(node), this.speed * k++);
+    for (let i = nodesInShortestPathOrderIndex; i < nodesInShortestPathOrder.length; i++) {
+      const node = nodesInShortestPathOrder[i];
+      this.timeoutNodesInShortestPathOrder.push(setTimeout(this.setIsIncludedInPath(node), this.speed * k++));
     }
+    this.timeoutVisualization = setTimeout(this.props.visualizationStopped, this.speed * k++);
   }
 
   render() {
@@ -187,13 +362,7 @@ export default class Grid extends Component {
     return (
       <MDBRow>
         <MDBCol size="12">
-          <div
-            onMouseMoveCapture={() => {
-              console.log("Kalu");
-            }}
-            className="border border-info z-depth-2"
-            style={{ backgroundColor: "white" }}
-          >
+          <div className="border border-info z-depth-2" style={{ backgroundColor: "white" }}>
             {grid.map((row, rowIndex) => {
               return (
                 <div style={{ display: "flex" }} key={rowIndex}>

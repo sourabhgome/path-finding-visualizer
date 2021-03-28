@@ -42,6 +42,20 @@ export default class Node extends Component {
     return this.state.isWall;
   }
 
+  setStart(isStart) {
+    if (!isStart) this.baseClassName = "";
+    else this.baseClassName = "node-start";
+    this.className = this.baseClassName;
+    this.setState({ isStart: isStart });
+  }
+
+  setFinish(isFinish) {
+    if (!isFinish) this.baseClassName = "";
+    else this.baseClassName = "node-finish";
+    this.className = this.baseClassName;
+    this.setState({ isFinish: isFinish });
+  }
+
   setIsIncludedInPath(isIncludedInPath) {
     if (isIncludedInPath) this.className = this.baseClassName + " node-shortest-path";
     this.setState({ isIncludedInPath: isIncludedInPath });
@@ -60,7 +74,7 @@ export default class Node extends Component {
     const { row, col, isWall, onMouseDown, onMouseEnter, onMouseUp } = this.props;
     if (isWall) {
       this.className = this.baseClassName + " node-wall";
-      this.setState({ isWall: isWall });
+      //this.setState({ isWall: isWall });
     }
     return (
       <div
