@@ -6,6 +6,8 @@ import Node from "../Node/Node";
 import { dijkstra, getNodesInShortestPathOrder } from "../algorithms/dijkstra";
 import dfs from "../algorithms/dfs";
 import bfs from "../algorithms/bfs";
+import randomObstruction from "../algorithms/randomObstruction";
+import randomConnection from "../algorithms/randomConnection";
 
 export default class Grid extends Component {
   constructor(props) {
@@ -29,12 +31,16 @@ export default class Grid extends Component {
     this.draggingFinish = false;
     this.timeoutVisitedNodesInOrder = [];
     this.timeoutNodesInShortestPathOrder = [];
+    this.timeoutMazeNodes = [];
     this.timeoutVisualization = null;
     this.visitedNodesInOrderCurrentIndex = 0;
     this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.mazeNodesCurrentIndex = 0;
     this.visitedNodesInOrder = [];
     this.nodesInShortestPathOrder = [];
+    this.mazeNodes = [];
     this.isVisualizing = false;
+    this.canDrawMaze = true;
   }
 
   //Init
@@ -91,6 +97,28 @@ export default class Grid extends Component {
     };
   }
 
+  setIsWall(wall) {
+    if (
+      (wall.row != this.startNode.row || wall.col != this.startNode.col) &&
+      (wall.row != this.finishNode.row || wall.col != this.finishNode.col)
+    )
+      return () => {
+        this.grid[wall.row][wall.col].isWall = true;
+        this.nodes[wall.row][wall.col].setIsWall(true);
+      };
+  }
+
+  setIsIncludedInMaze(wall) {
+    if (
+      (wall.row != this.startNode.row || wall.col != this.startNode.col) &&
+      (wall.row != this.finishNode.row || wall.col != this.finishNode.col)
+    )
+      return () => {
+        this.mazeNodesCurrentIndex++;
+        this.grid[wall.row][wall.col].isWall = true;
+        this.nodes[wall.row][wall.col].setIsWall(true);
+      };
+  }
   setIsIncludedInPath(node) {
     return () => {
       this.nodesInShortestPathOrderCurrentIndex++;
@@ -100,32 +128,30 @@ export default class Grid extends Component {
 
   setSpeed(speed) {
     this.speed = speed == 1 ? 40 : speed == 2 ? 20 : speed == 3 ? 15 : 10;
-    if (this.timeoutVisitedNodesInOrder.length) {
-      for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
-      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
-      clearTimeout(this.timeoutVisualization);
-    } else if (this.timeoutNodesInShortestPathOrder.length) {
-      for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
-      clearTimeout(this.timeoutVisualization);
-      this.isVisualizing = false;
+    if (this.isVisualizing) {
+      if (this.timeoutVisitedNodesInOrder.length) {
+        for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
+        for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+        clearTimeout(this.timeoutVisualization);
+      } else if (this.timeoutNodesInShortestPathOrder.length) {
+        for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
+        clearTimeout(this.timeoutVisualization);
+        this.isVisualizing = false;
+      }
+      this.timeoutVisitedNodesInOrder = [];
+      this.timeoutNodesInShortestPathOrder = [];
+      this.animate(
+        this.visitedNodesInOrder,
+        this.visitedNodesInOrderCurrentIndex,
+        this.nodesInShortestPathOrder,
+        this.nodesInShortestPathOrderCurrentIndex
+      );
     }
-    this.timeoutVisitedNodesInOrder = [];
-    this.timeoutNodesInShortestPathOrder = [];
-    this.animate(
-      this.visitedNodesInOrder,
-      this.visitedNodesInOrderCurrentIndex,
-      this.nodesInShortestPathOrder,
-      this.nodesInShortestPathOrderCurrentIndex
-    );
   }
 
   setAlgorithm(algorithm) {
     this.selectedAlgorithm = algorithm;
     this.setState({ selectedAlgorithm: algorithm });
-  }
-
-  setMaze(maze) {
-    console.log(maze);
   }
 
   /*sleep(milliseconds) {
@@ -142,11 +168,13 @@ export default class Grid extends Component {
       for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
       for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
       clearTimeout(this.timeoutVisualization);
-      this.props.visualizationStopped();
+      this.isVisualizing = false;
+      this.visualizationStopped();
     } else if (this.timeoutNodesInShortestPathOrder.length) {
       for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
       clearTimeout(this.timeoutVisualization);
-      this.props.visualizationStopped();
+      this.isVisualizing = false;
+      this.visualizationStopped();
     }
     this.visitedNodesInOrderCurrentIndex = 0;
     this.nodesInShortestPathOrderCurrentIndex = 0;
@@ -173,41 +201,53 @@ export default class Grid extends Component {
       for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
       for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
       clearTimeout(this.timeoutVisualization);
-      this.props.visualizationStopped();
+      this.visualizationStopped();
       this.isVisualizing = false;
     } else if (this.timeoutNodesInShortestPathOrder.length) {
       for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
       clearTimeout(this.timeoutVisualization);
-      this.props.visualizationStopped();
+      this.visualizationStopped();
+      this.isVisualizing = false;
+    } else if (this.mazeNodes.length) {
+      for (let timeout of this.timeoutMazeNodes) clearTimeout(timeout);
+      clearTimeout(this.timeoutVisualization);
+      this.visualizationStopped();
       this.isVisualizing = false;
     }
     this.timeoutVisitedNodesInOrder = [];
     this.timeoutNodesInShortestPathOrder = [];
+    this.timeoutMazeNodes = [];
   }
 
   onResume() {
-    this.animate(
-      this.visitedNodesInOrder,
-      this.visitedNodesInOrderCurrentIndex,
-      this.nodesInShortestPathOrder,
-      this.nodesInShortestPathOrderCurrentIndex
-    );
+    if (this.visitedNodesInOrder.length || this.nodesInShortestPathOrder.length)
+      this.animate(
+        this.visitedNodesInOrder,
+        this.visitedNodesInOrderCurrentIndex,
+        this.nodesInShortestPathOrder,
+        this.nodesInShortestPathOrderCurrentIndex
+      );
+    else if (this.mazeNodes.length) {
+      this.animateMaze(this.mazeNodes, this.mazeNodesCurrentIndex);
+    }
   }
 
   //Mouse listeners
   handleMouseDown(row, col) {
-    this.isMousePressed = true;
-    if (row == this.startNode.row && col == this.startNode.col) {
-      this.draggingStart = true;
-    } else if (row == this.finishNode.row && col == this.finishNode.col) {
-      this.draggingFinish = true;
-    } else {
-      if (this.grid[row][col].isWall) {
-        this.grid[row][col].isWall = false;
-        this.nodes[row][col].setIsWall(false);
+    if (this.canDrawMaze) {
+      this.isMousePressed = true;
+      if (row == this.startNode.row && col == this.startNode.col) {
+        this.draggingStart = true;
+      } else if (row == this.finishNode.row && col == this.finishNode.col) {
+        this.draggingFinish = true;
       } else {
-        this.grid[row][col].isWall = true;
-        this.nodes[row][col].setIsWall(true);
+        if (this.grid[row][col].isWall) {
+          this.grid[row][col].isWall = false;
+          this.nodes[row][col].setIsWall(false);
+        } else {
+          this.grid[row][col].isWall = true;
+          this.nodes[row][col].setIsWall(true);
+        }
       }
     }
     //this.setState({ grid: this.grid });
@@ -247,21 +287,28 @@ export default class Grid extends Component {
     this.draggingStart = false;
   }
 
+  visualizationStopped = () => {
+    this.canDrawMaze = true;
+    this.isVisualizing = false;
+    this.props.visualizationStopped();
+  };
+
   onVisualize() {
+    this.canDrawMaze = false;
     if (this.timeoutVisitedNodesInOrder.length) {
       for (let timeout of this.timeoutVisitedNodesInOrder) clearTimeout(timeout);
       for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
       clearTimeout(this.timeoutVisualization);
       this.visitedNodesInOrderCurrentIndex = 0;
       this.nodesInShortestPathOrderCurrentIndex = 0;
-      if (this.isVisualizing) this.props.visualizationStopped();
+      if (this.isVisualizing) this.visualizationStopped();
       this.isVisualizing = true;
     } else if (this.timeoutNodesInShortestPathOrder.length) {
       for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
       clearTimeout(this.timeoutVisualization);
       this.visitedNodesInOrderCurrentIndex = 0;
       this.nodesInShortestPathOrderCurrentIndex = 0;
-      if (this.isVisualizing) this.props.visualizationStopped();
+      if (this.isVisualizing) this.visualizationStopped();
       this.isVisualizing = true;
     }
     const grid = this.grid;
@@ -334,17 +381,10 @@ export default class Grid extends Component {
     nodesInShortestPathOrder,
     nodesInShortestPathOrderIndex
   ) {
-    console.log("Animate chala");
     let k = 1;
     this.timeoutVisitedNodesInOrder = [];
     this.timeoutNodesInShortestPathOrder = [];
     this.timeoutVisualization = null;
-    console.log(
-      visitedNodesInOrder,
-      visitedNodesInOrderIndex,
-      nodesInShortestPathOrder,
-      nodesInShortestPathOrderIndex
-    );
     for (let i = visitedNodesInOrderIndex; i < visitedNodesInOrder.length; i++) {
       const node = visitedNodesInOrder[i];
       this.timeoutVisitedNodesInOrder.push(setTimeout(this.setIsVisited(node), this.speed * k++));
@@ -353,12 +393,33 @@ export default class Grid extends Component {
       const node = nodesInShortestPathOrder[i];
       this.timeoutNodesInShortestPathOrder.push(setTimeout(this.setIsIncludedInPath(node), this.speed * k++));
     }
-    this.timeoutVisualization = setTimeout(this.props.visualizationStopped, this.speed * k++);
+    this.timeoutVisualization = setTimeout(this.visualizationStopped, this.speed * k++);
+  }
+
+  setMaze(maze) {
+    this.isVisualizing = true;
+    if (maze === "Random Obstruction") {
+      this.mazeNodes = randomObstruction(this.grid);
+      this.mazeNodesCurrentIndex = 0;
+      this.animateMaze(this.mazeNodes, 0);
+    } else if (maze === "Random Connection") {
+      this.mazeNodes = randomConnection(this.grid);
+      this.mazeNodesCurrentIndex = 0;
+      this.animateMaze(this.mazeNodes, 0);
+    }
+  }
+
+  animateMaze(walls, index) {
+    let k = 1;
+    for (let i = index; i < walls.length; i++) {
+      const wall = walls[i];
+      this.timeoutMazeNodes.push(setTimeout(this.setIsIncludedInMaze(wall), this.speed * k++));
+    }
+    this.timeoutVisualization = setTimeout(this.visualizationStopped, this.speed * k++);
   }
 
   render() {
     const { grid } = this.state;
-    console.log("Render chala");
     return (
       <MDBRow>
         <MDBCol size="12">

@@ -15,7 +15,7 @@ export default class Footer extends Component {
           className="font-small pt-4 mt-4 text-center py-3"
           style={{ backgroundColor: "#e0e0e0" }}
         >
-          &copy; {new Date().getFullYear()} Copyright: <a href="#"> Sourabh Gome </a>
+          &copy; {new Date().getFullYear()} Copyright: <a href="github.com/SourabhGome"> Sourabh Gome </a>
         </MDBCol>
       </MDBRow>
     );

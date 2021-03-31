@@ -12,6 +12,7 @@ export default function dfs(grid, startNode, finishNode) {
     if (currentNode === finishNode) return visitedNodesInOrder;
     pushNeighboursToQueue(currentNode, grid, queue);
   }
+  return visitedNodesInOrder;
 }
 
 function pushNeighboursToQueue(node, grid, queue) {

@@ -42,27 +42,22 @@ class Navbar extends Component {
           <MDBCollapse id="navbarCollapse3" isOpen={this.state.isOpen} navbar>
             <MDBNavbarNav right>
               <MDBNavItem>
-                <MDBNavLink className="waves-effect waves-light" to="#!">
-                  <MDBIcon fab icon="twitter" />
+                <MDBNavLink className="waves-effect waves-light" to="linkedin.com/in/sourabhgome">
+                  <MDBIcon fab icon="linkedin" />
                 </MDBNavLink>
               </MDBNavItem>
               <MDBNavItem>
-                <MDBNavLink className="waves-effect waves-light" to="#!">
+                <MDBNavLink className="waves-effect waves-light" to="sourabhgome@gmail.com">
                   <MDBIcon fab icon="google-plus-g" />
                 </MDBNavLink>
               </MDBNavItem>
               <MDBNavItem>
-                <MDBDropdown>
-                  <MDBDropdownToggle nav caret>
-                    <MDBIcon icon="user" />
-                  </MDBDropdownToggle>
-                  <MDBDropdownMenu className="dropdown-default">
-                    <MDBDropdownItem href="#!">Action</MDBDropdownItem>
-                    <MDBDropdownItem href="#!">Another Action</MDBDropdownItem>
-                    <MDBDropdownItem href="#!">Something else here</MDBDropdownItem>
-                    <MDBDropdownItem href="#!">Something else here</MDBDropdownItem>
-                  </MDBDropdownMenu>
-                </MDBDropdown>
+                <MDBNavLink
+                  className="waves-effect waves-light"
+                  to="github.com/SourabhGome/path-finding-visualizer"
+                >
+                  <MDBIcon fab icon="github" />
+                </MDBNavLink>
               </MDBNavItem>
             </MDBNavbarNav>
           </MDBCollapse>
@@ -71,6 +66,7 @@ class Navbar extends Component {
     );
   }
 }
+export default Navbar;
 /*
             <MDBNavbarNav left>
               <MDBNavItem>
@@ -87,5 +83,23 @@ class Navbar extends Component {
                 </MDBDropdown>
               </MDBNavItem>
             </MDBNavbarNav>
+
+
+
+                          <MDBNavItem>
+                <MDBDropdown>
+                  <MDBDropdownToggle nav caret>
+                    <MDBIcon icon="user" />
+                  </MDBDropdownToggle>
+                  <MDBDropdownMenu className="dropdown-default">
+                    <MDBDropdownItem href="#!">Action</MDBDropdownItem>
+                    <MDBDropdownItem href="#!">Another Action</MDBDropdownItem>
+                    <MDBDropdownItem href="#!">Something else here</MDBDropdownItem>
+                    <MDBDropdownItem href="#!">Something else here</MDBDropdownItem>
+                  </MDBDropdownMenu>
+                </MDBDropdown>
+              </MDBNavItem>
+
+
+
             */
-export default Navbar;

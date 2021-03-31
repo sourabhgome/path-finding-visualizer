@@ -18,7 +18,7 @@ export default class Toolbar extends Component {
     this.state = {
       algorithms: ["BFS", "DFS", "Dijkstra"],
       selectedAlgorithm: "Dijkstra",
-      mazes: ["Maze 1", "Maze 2", "Maze 3"],
+      mazes: ["Random Obstruction", "Random Connection"],
       selectedMaze: "",
       isVisualizing: false,
       isPaused: false,
@@ -42,7 +42,14 @@ export default class Toolbar extends Component {
   onMazeSelected = (event) => {
     const value = event.target.innerHTML;
     this.props.setMaze(value);
-    this.setState({ selectedMaze: value });
+    this.setState({
+      selectedMaze: value,
+      isVisualizing: true,
+      isVisualizeButtonDisabled: true,
+      isAlgorithmDropdownDisabled: true,
+      isMazeDropdownDisabled: true,
+      isSpeedbarDisabled: true,
+    });
   };
 
   onSpeedChange = (event) => {
@@ -63,7 +70,6 @@ export default class Toolbar extends Component {
   };
 
   onPause = () => {
-    console.log("On pause");
     this.props.onPause();
     this.setState({
       isPaused: true,
@@ -97,7 +103,6 @@ export default class Toolbar extends Component {
 
   setIsVisualizing(isVisualizing) {
     //throw new Error("kuch bhi");
-    console.log("setIsVisualizing : ", isVisualizing);
     if (isVisualizing) {
       this.setState({
         isVisualizing: true,
@@ -124,16 +129,13 @@ export default class Toolbar extends Component {
     const onMazeSelected = this.onMazeSelected;
     const state = this.state;
     let controlbutton = null;
-    console.log(this.state);
     if (!this.state.isVisualizing && !this.state.isPaused) {
-      console.log("if");
       controlbutton = (
         <MDBBtn key="PauseButtonDisabled" color="warning" disabled>
           Pause
         </MDBBtn>
       );
     } else if (this.state.isVisualizing && !this.state.isPaused) {
-      console.log("Else if");
       controlbutton = (
         <MDBBtn key="PauseButton" color="warning" onClick={this.onPause}>
           Pause
