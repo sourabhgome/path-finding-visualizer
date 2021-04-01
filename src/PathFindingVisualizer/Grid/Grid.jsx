@@ -6,6 +6,7 @@ import Node from "../Node/Node";
 import { dijkstra, getNodesInShortestPathOrder } from "../algorithms/dijkstra";
 import dfs from "../algorithms/dfs";
 import bfs from "../algorithms/bfs";
+import aStar from "../algorithms/aStar";
 import randomObstruction from "../algorithms/randomObstruction";
 import randomConnection from "../algorithms/randomConnection";
 
@@ -64,6 +65,7 @@ export default class Grid extends Component {
       isStart: row === this.startNode.row && col === this.startNode.col,
       isFinish: row === this.finishNode.row && col === this.finishNode.col,
       distance: Infinity,
+      heuristicDistance: Infinity,
       isVisited: false,
       isConsidered: false,
       isWall: false,
@@ -321,6 +323,7 @@ export default class Grid extends Component {
     for (const row of this.grid) {
       for (const node of row) {
         node.distance = Infinity;
+        node.heuristicDistance = Infinity;
         node.isVisited = false;
         node.isConsidered = false;
         node.previousNode = null;
@@ -337,6 +340,8 @@ export default class Grid extends Component {
       this.visualizeDFS();
     } else if (this.selectedAlgorithm === "BFS") {
       this.visualizeBFS();
+    } else if (this.selectedAlgorithm === "A*") {
+      this.visualizeAStar();
     }
   }
 
@@ -371,6 +376,19 @@ export default class Grid extends Component {
     const startNode = grid[this.startNode.row][this.startNode.col];
     const finishNode = grid[this.finishNode.row][this.finishNode.col];
     const visitedNodesInOrder = bfs(this.grid, startNode, finishNode);
+    const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+    this.visitedNodesInOrder = visitedNodesInOrder;
+    this.nodesInShortestPathOrder = nodesInShortestPathOrder;
+    this.visitedNodesInOrderCurrentIndex = 0;
+    this.nodesInShortestPathOrderCurrentIndex = 0;
+    this.animate(visitedNodesInOrder, 0, nodesInShortestPathOrder, 0);
+  }
+
+  visualizeAStar() {
+    const grid = this.grid;
+    const startNode = grid[this.startNode.row][this.startNode.col];
+    const finishNode = grid[this.finishNode.row][this.finishNode.col];
+    const visitedNodesInOrder = aStar(this.grid, startNode, finishNode);
     const nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
     this.visitedNodesInOrder = visitedNodesInOrder;
     this.nodesInShortestPathOrder = nodesInShortestPathOrder;

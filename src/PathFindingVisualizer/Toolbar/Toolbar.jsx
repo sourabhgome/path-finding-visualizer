@@ -16,7 +16,7 @@ export default class Toolbar extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      algorithms: ["BFS", "DFS", "Dijkstra"],
+      algorithms: ["BFS", "DFS", "Dijkstra", "A*"],
       selectedAlgorithm: "Dijkstra",
       mazes: ["Random Obstruction", "Random Connection"],
       selectedMaze: "",
@@ -36,6 +36,7 @@ export default class Toolbar extends Component {
   onAlgorithmSelected = (event) => {
     const value = event.target.innerHTML;
     this.props.setAlgorithm(value);
+    this.selectedAlgorithm = value;
     this.setState({ selectedAlgorithm: value });
   };
 
