@@ -137,6 +137,10 @@ export default class Grid extends Component {
         for (let timeout of this.timeoutNodesInShortestPathOrder) clearTimeout(timeout);
         clearTimeout(this.timeoutVisualization);
         this.isVisualizing = false;
+      } else if (this.timeoutMazeNodes.length) {
+        for (let timeout of this.timeoutMazeNodes) clearTimeout(timeout);
+        clearTimeout(this.timeoutVisualization);
+        this.isVisualizing = false;
       }
       this.timeoutVisitedNodesInOrder = [];
       this.timeoutNodesInShortestPathOrder = [];
